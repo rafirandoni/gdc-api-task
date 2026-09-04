@@ -114,8 +114,6 @@ make run              # run the API (needs env loaded and DB reachable)
 make build            # builds bin/api and bin/migrate
 make test             # run unit tests
 make vet              # go vet ./...
-make docker-up        # start Postgres
-make docker-down      # stop Postgres
 make migrate-up       # apply pending migrations
 make migrate-down     # roll back one migration group
 make migrate-status   # show applied/pending migrations
