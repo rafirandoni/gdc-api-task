@@ -1,0 +1,5 @@
+bin/
+.env*
+!.env.example
+*.log
+__debug*

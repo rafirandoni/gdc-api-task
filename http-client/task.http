@@ -1,0 +1,171 @@
+@host = http://localhost:8080
+@token = {{Login.response.body.data.token}}
+@taskId = 01a06a37-afeb-7eff-a7d3-a1e71398c514
+@assigneeId = 1
+@idempotencyKey = create-task-demo-0001
+
+### Login
+# @name Login
+POST {{host}}/api/v1/auth/login
+
+{
+  "email": "member@example.com",
+  "password": "password"
+}
+
+### Create task - success (201)
+# @name CreateTask
+# @note Title required; status is optional (defaults to BACKLOG) and case-insensitive.
+POST {{host}}/api/v1/tasks
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "idempotency_key": "{{idempotencyKey}}",
+  "title": "Implement login",
+  "description": "wire up the auth form",
+  "status": "BACKLOG"
+}
+
+### Create task - idempotent replay of the key above (200)
+# @name CreateTaskReplay
+# @note Same idempotency_key within 24h returns the task from case 1 with 200 instead of a duplicate.
+POST {{host}}/api/v1/tasks
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "idempotency_key": "{{idempotencyKey}}",
+  "title": "ignored because it replays",
+  "status": "FINISHED"
+}
+
+### Create task - missing token (401)
+# @name CreateTaskNoToken
+POST {{host}}/api/v1/tasks
+Content-Type: application/json
+
+{
+  "idempotency_key": "create-task-demo-0001",
+  "title": "no auth header"
+}
+
+### Create task - missing idempotency_key (400)
+# @name CreateTaskMissingIdempotencyKey
+POST {{host}}/api/v1/tasks
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "no key provided"
+}
+
+### Create task - blank title (400)
+# @name CreateTaskBlankTitle
+POST {{host}}/api/v1/tasks
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "idempotency_key": "create-task-demo-0002",
+  "title": "   "
+}
+
+### Create task - invalid status (400)
+# @name CreateTaskInvalidStatus
+POST {{host}}/api/v1/tasks
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "idempotency_key": "create-task-demo-0003",
+  "title": "bad status",
+  "status": "NOT_A_STATUS"
+}
+
+### List tasks - paginated (200)
+# @name ListTasks
+GET {{host}}/api/v1/tasks?page=1&limit=20
+Authorization: Bearer {{token}}
+
+### List tasks - filter by status (200)
+# @name ListTasksByStatus
+GET {{host}}/api/v1/tasks?status=BACKLOG&page=1&limit=20
+Authorization: Bearer {{token}}
+
+### List tasks - filter by assignee (200)
+# @name ListTasksByAssignee
+GET {{host}}/api/v1/tasks?user_id={{assigneeId}}&page=1&limit=20
+Authorization: Bearer {{token}}
+
+### Get task by id (200)
+# @name GetTask
+# @note Set @taskId to the data.id returned by CreateTask.
+GET {{host}}/api/v1/tasks/{{taskId}}
+Authorization: Bearer {{token}}
+
+### Get task - not found (404)
+# @name GetTaskNotFound
+GET {{host}}/api/v1/tasks/00000000-0000-0000-0000-000000000001
+Authorization: Bearer {{token}}
+
+### Update task - title and status (200)
+# @name UpdateTask
+PATCH {{host}}/api/v1/tasks/{{taskId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Implement login (rev 2)",
+  "status": "ON_REVIEW"
+}
+
+### Update task - invalid status (400)
+# @name UpdateTaskInvalidStatus
+PATCH {{host}}/api/v1/tasks/{{taskId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "STATUS_ASAL"
+}
+
+### Assign task to a user (200)
+# @name AssignTask
+POST {{host}}/api/v1/tasks/{{taskId}}/assign
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "user_id": 2
+}
+
+### Assign task - assignee does not exist (400)
+# @name AssignTaskMissingUser
+POST {{host}}/api/v1/tasks/{{taskId}}/assign
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "user_id": 999999
+}
+
+### Unassign task (200)
+# @name UnassignTask
+POST {{host}}/api/v1/tasks/{{taskId}}/assign
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "user_id": null
+}
+
+### Delete task - soft delete (200)
+# @name DeleteTask
+DELETE {{host}}/api/v1/tasks/{{taskId}}
+Authorization: Bearer {{token}}
+
+### Get deleted task - not found (404)
+# @name GetDeletedTaskNotFound
+GET {{host}}/api/v1/tasks/{{taskId}}
+Authorization: Bearer {{token}}

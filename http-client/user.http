@@ -1,0 +1,40 @@
+@host = http://localhost:8080
+@token = {{Login.response.body.data.token}}
+@memberId = 1
+@memberEmail = member2@example.com
+@memberPassword = password
+
+### Liveness probe - no dependencies (200)
+# @name HealthCheck
+GET {{host}}/healthz
+
+
+### Register a member - open endpoint (201)
+# @name RegisterMember
+POST {{host}}/api/v1/users
+Content-Type: application/json
+
+{
+  "email": "{{memberEmail}}",
+  "password": "{{memberPassword}}"
+}
+
+### Login - open endpoint (200)
+# @name Login
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{memberEmail}}",
+  "password": "{{memberPassword}}"
+}
+
+### Get my profile - needs @token (200)
+# @name GetMe
+GET {{host}}/api/v1/users/me
+Authorization: Bearer {{token}}
+
+### Get my own profile by id - needs @token (200)
+# @name GetOwnProfile
+GET {{host}}/api/v1/users/{{memberId}}
+Authorization: Bearer {{token}}

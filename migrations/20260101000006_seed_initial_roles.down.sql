@@ -1,0 +1,1 @@
+DELETE FROM role WHERE label IN ('USER', 'ADMIN');
